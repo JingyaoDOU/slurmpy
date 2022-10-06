@@ -139,7 +139,7 @@ class Slurm(object):
             dtmax=self.dtmax,
             CFL=self.CFL,
             swift_exe=self.swift_exe,
-            time_out=self.time_out * 3600,  # convert to seconds
+            time_end=self.time_end * 3600,  # convert to seconds
             delta_time=self.delta_time,
         )
 
