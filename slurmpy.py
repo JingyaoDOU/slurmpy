@@ -48,8 +48,6 @@ import atexit
 import hashlib
 import datetime
 
-from asyncio.timeouts import timeout_at
-
 TMPL = """\
 #!/bin/bash
 
