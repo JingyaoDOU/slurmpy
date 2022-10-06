@@ -1,0 +1,6 @@
+{
+    "python.autoComplete.extraPaths": [
+    
+    ],
+    "editor.formatOnSave": true
+}

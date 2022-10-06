@@ -48,6 +48,8 @@ import atexit
 import hashlib
 import datetime
 
+from asyncio.timeouts import timeout_at
+
 TMPL = """\
 #!/bin/bash
 
@@ -69,9 +71,23 @@ def tmp(suffix=".sh"):
 
 
 class Slurm(object):
-    def __init__(self, name, slurm_kwargs=None, tmpl=None,
-                 date_in_name=True, scripts_dir="slurm-scripts",
-                 log_dir='logs', bash_strict=True,hmax=0.1,para_impact=None,dtmax=5,CFL=0.1,swift_exe=None):
+    def __init__(
+        self,
+        name,
+        slurm_kwargs=None,
+        tmpl=None,
+        date_in_name=True,
+        scripts_dir="slurm-scripts",
+        log_dir="logs",
+        bash_strict=True,
+        hmax=0.1,
+        para_impact=None,
+        dtmax=5,
+        CFL=0.1,
+        swift_exe=None,
+        time_end=10,  # in hours
+        delta_time=100,  # seconds
+    ):
         if slurm_kwargs is None:
             slurm_kwargs = {}
         if tmpl is None:
@@ -80,8 +96,8 @@ class Slurm(object):
         self.bash_strict = bash_strict
 
         header = []
-        if 'time' not in slurm_kwargs.keys():
-            slurm_kwargs['time'] = '84:00:00'
+        if "time" not in slurm_kwargs.keys():
+            slurm_kwargs["time"] = "84:00:00"
         for k, v in slurm_kwargs.items():
             if len(k) > 1:
                 k = "--" + k + "="
@@ -96,8 +112,7 @@ class Slurm(object):
 
         self.header = "\n".join(header)
         self.bash_setup = "\n".join(bash_setup)
-        self.name = name.replace(
-            " ", "_")
+        self.name = name.replace(" ", "_")
         self.tmpl = tmpl
         self.slurm_kwargs = slurm_kwargs
         if scripts_dir is not None:
@@ -105,17 +120,28 @@ class Slurm(object):
         else:
             self.scripts_dir = None
         self.date_in_name = bool(date_in_name)
-        self.hmax=hmax
-        self.para_impact=para_impact
-        self.dtmax=dtmax
-        self.CFL=CFL
-        self.swift_exe=swift_exe
+        self.hmax = hmax
+        self.para_impact = para_impact
+        self.dtmax = dtmax
+        self.CFL = CFL
+        self.swift_exe = swift_exe
+        self.time_end = time_end
+        self.delta_time = delta_time
 
     def __str__(self):
-        return self.tmpl.format(name=self.name, header=self.header,
-                                log_dir=self.log_dir,
-                                bash_setup=self.bash_setup,
-                                hmax=self.hmax,para_impact=self.para_impact,dtmax=self.dtmax,CFL=self.CFL,swift_exe=self.swift_exe)
+        return self.tmpl.format(
+            name=self.name,
+            header=self.header,
+            log_dir=self.log_dir,
+            bash_setup=self.bash_setup,
+            hmax=self.hmax,
+            para_impact=self.para_impact,
+            dtmax=self.dtmax,
+            CFL=self.CFL,
+            swift_exe=self.swift_exe,
+            time_out=self.time_out * 3600,  # convert to seconds
+            delta_time=self.delta_time,
+        )
 
     def _tmpfile(self):
         if self.scripts_dir is None:
@@ -126,8 +152,15 @@ class Slurm(object):
                     os.makedirs(_dir)
             return "%s/%s.sh" % (self.scripts_dir, self.name)
 
-    def run(self, command, name_addition=None, cmd_kwargs=None,
-            _cmd="sbatch", tries=1, depends_on=None):
+    def run(
+        self,
+        command,
+        name_addition=None,
+        cmd_kwargs=None,
+        _cmd="sbatch",
+        tries=1,
+        depends_on=None,
+    ):
         """
         command: a bash command that you want to run
         name_addition: if not specified, the sha1 of the command to run
@@ -152,7 +185,7 @@ class Slurm(object):
 
         n = self.name
         self.name = self.name.strip(" -")
-        self.name += ("-" + name_addition.strip(" -"))
+        self.name += "-" + name_addition.strip(" -")
         args = []
         for k, v in cmd_kwargs.items():
             args.append("export %s=%s" % (k, v))
@@ -168,8 +201,7 @@ class Slurm(object):
         job_id = None
         for itry in range(1, tries + 1):
             args = [_cmd]
-            args.extend([("--dependency=afterok:%d" % int(d))
-                         for d in depends_on])
+            args.extend([("--dependency=afterok:%d" % int(d)) for d in depends_on])
             if itry > 1:
                 mid = "--dependency=afternotok:%d" % job_id
                 args.append(mid)
@@ -187,4 +219,5 @@ class Slurm(object):
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
