@@ -85,7 +85,7 @@ class Slurm(object):
         dtmax=5,
         CFL=0.1,
         swift_exe=None,
-        time_end=10,  # in hours
+        time_end=36000,  # in seconds
         delta_time=100,  # seconds
     ):
         if slurm_kwargs is None:
@@ -139,7 +139,7 @@ class Slurm(object):
             dtmax=self.dtmax,
             CFL=self.CFL,
             swift_exe=self.swift_exe,
-            time_end=self.time_end * 3600,  # convert to seconds
+            time_end=self.time_end,  # convert to seconds
             delta_time=self.delta_time,
         )
 
