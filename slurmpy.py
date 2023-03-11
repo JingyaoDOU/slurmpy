@@ -85,6 +85,7 @@ class Slurm(object):
         swift_exe=None,
         time_end=36000,  # in seconds
         delta_time=100,
+        thread = 32,
     ):
         if slurm_kwargs is None:
             slurm_kwargs = {}
@@ -127,6 +128,7 @@ class Slurm(object):
         self.delta_time = delta_time
         self.outdir = "output_%dh_%ddt" % (self.time_end / 3600, self.delta_time)
         self.outnum = "%04d" % (self.time_end / self.delta_time)
+        self.thread = thread
 
     def __str__(self):
         return self.tmpl.format(
@@ -143,6 +145,7 @@ class Slurm(object):
             delta_time=self.delta_time,
             outdir=self.outdir,
             outnum=self.outnum,
+            thread = self.thread,   
         )
 
     def _tmpfile(self):
